@@ -1,0 +1,22 @@
+Step 1: Edit the Redis Configuration File
+sudo nano /etc/redis/redis.conf
+requirepass your_secure_password
+sudo systemctl restart redis-server
+
+Testing the Password
+redis-cli
+127.0.0.1:6379> ping
+(error) NOAUTH Authentication required.
+
+AUTH 77c7e379fec5ftg_3434
+
+127.0.0.1:6379> AUTH your_secure_password
+OK
+127.0.0.1:6379> ping
+PONG
+
+
+redis-cli
+
+
+

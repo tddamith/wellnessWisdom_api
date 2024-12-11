@@ -5,6 +5,7 @@ import asyncio
 from app.db.database import connect_all, close_all
 from app.api.v1.category import router as category_router
 from app.api.v1.sub_category import router as sub_category_router
+from app.api.v1.articles import router as articles_router
 # from app.api.v1.proxy_download import router as proxy_download_router
 
 app = FastAPI()
@@ -34,6 +35,7 @@ async def shutdown_db():
 # app.include_router(yt_download_link_router, prefix="/api/v1")
 app.include_router(category_router, prefix="/api/v1",tags=["Categories"])
 app.include_router(sub_category_router, prefix="/api/v1",tags=["SubCategories"])
+app.include_router(articles_router, prefix="/api/v1",tags=["Article"])
 
 @app.get("/")
 async def read_root():

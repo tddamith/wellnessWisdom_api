@@ -17,7 +17,8 @@ class MySQLDB:
                 db=settings.mysql_db,
                 autocommit=True,
                 minsize=1,
-                maxsize=10
+                maxsize=100,
+                connect_timeout=10,  # Timeout for establishing a connection
             )
             logging.info(f"Connected to MySQL: {settings.mysql_db}")
 
@@ -44,7 +45,7 @@ class MySQLDB:
                 # Suppress warnings for table creation
                 await cursor.execute("SET sql_notes = 0;")
 
-                # Create tables if they do not exist
+                # Create categories table
                 await cursor.execute("""
                 CREATE TABLE IF NOT EXISTS categories (
                     id CHAR(36) PRIMARY KEY,
@@ -57,6 +58,7 @@ class MySQLDB:
                 );
                 """)
 
+                # Create subcategories table
                 await cursor.execute("""
                 CREATE TABLE IF NOT EXISTS subcategories (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -70,6 +72,9 @@ class MySQLDB:
                     FOREIGN KEY (category_id) REFERENCES categories(id)
                 );
                 """)
+
+                # Create articles table
+                await self.ensure_article_table(cursor)
 
                 # Ensure all required columns exist in the categories table
                 await self.ensure_columns_exist(
@@ -88,6 +93,26 @@ class MySQLDB:
                 await cursor.execute("SET sql_notes = 1;")
 
                 logging.info("Ensured all necessary tables and columns exist.")
+
+    async def ensure_article_table(self, cursor):
+        """Ensure the articles table exists."""
+        await cursor.execute("""
+        CREATE TABLE IF NOT EXISTS news_articles (
+            id CHAR(36) PRIMARY KEY,
+            title VARCHAR(255) NOT NULL,
+            content TEXT NOT NULL,
+            author VARCHAR(255) DEFAULT NULL,
+            create_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            category_id CHAR(36) DEFAULT NULL,
+            image_url VARCHAR(255) DEFAULT NULL,
+            is_published BOOLEAN DEFAULT FALSE,
+            views INT DEFAULT 0,
+            tags JSON DEFAULT NULL,
+            FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+        );
+        """)
+        logging.info("Ensured the 'news_articles' table exists.")
 
     async def ensure_columns_exist(self, cursor, table_name, required_columns):
         """Ensure required columns exist in a table."""

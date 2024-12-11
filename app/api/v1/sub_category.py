@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import uuid4
 from app.db.database import mysql
 from app.api.v1.schemas import CategoryCreate, CategoryResponse, SubCategoryCreate, SubCategoryResponse
+from typing import List
 
 router = APIRouter()
 
@@ -190,3 +191,41 @@ async def update_all_subcategory_ids():
                 raise HTTPException(status_code=500, detail=f"Failed to update subcategory IDs: {str(e)}")
 
     return {"message": f"Successfully updated IDs for {len(subcategories)} subcategories."}
+
+
+@router.get("/categories/{category_id}/subcategories", response_model=List[SubCategoryResponse])
+async def get_subcategories_by_category(category_id: str):
+    """
+    Retrieve subcategories by category_id.
+    """
+    async with mysql.pool.acquire() as conn:
+        async with conn.cursor() as cursor:
+            try:
+                # Query to fetch subcategories for the given category_id
+                await cursor.execute("""
+                    SELECT * FROM subcategories
+                    WHERE category_id = %s
+                """, (category_id,))
+                result = await cursor.fetchall()
+
+                # If no subcategories found, raise an HTTP exception
+                if not result:
+                    raise HTTPException(status_code=404, detail="No subcategories found for the given category ID")
+
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to retrieve subcategories: {str(e)}")
+
+    # Convert the result to a list of SubCategoryResponse models
+    return [
+        {
+            "id": row[0],
+            "name": row[1],
+            "category_id": row[2],
+            "create_date": row[3],
+            "update_date": row[4],
+            "no_of_articles": row[5],
+            "order_no": row[6],
+            "icon_name": row[7],
+        }
+        for row in result
+    ]

@@ -53,14 +53,20 @@ class SubCategoryResponse(SubCategoryBase):
 
 # Article Schemas
 class ArticleBase(BaseModel):
+    id: str = Field(..., description="Unique identifier for the article")
     title: str = Field(..., max_length=255, description="Title of the article")
     content: str = Field(..., description="Content of the article")
-    author: Optional[str] = Field(None, max_length=255, description="Author of the article")
-    category_id: Optional[str] = Field(None, description="ID of the category associated with the article")
-    sub_category_id: Optional[str] = Field(None, description="ID of the subcategory associated with the article")
-    image_url: Optional[str] = Field(None, max_length=255, description="URL of the article's featured image")
+    author: Optional[str] = Field(None, description="Author of the article")
+    category_id: str = Field(..., description="Category ID associated with the article")
+    sub_category_id: Optional[str] = Field(None, description="Subcategory ID associated with the article")
+    image_url: Optional[str] = Field(None, description="URL of the article's featured image")
     is_published: bool = Field(False, description="Publication status of the article")
+    views: int = Field(0, description="Number of views for the article")
     tags: Optional[List[str]] = Field(None, description="Tags associated with the article")
+    create_date: datetime = Field(..., description="Creation timestamp")
+    update_date: datetime = Field(..., description="Last update timestamp")
+    category_name: Optional[str] = Field(None, description="Name of the category")
+    subcategory_name: Optional[str] = Field(None, description="Name of the subcategory")
 
 
 class ArticleCreate(ArticleBase):

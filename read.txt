@@ -39,6 +39,7 @@ Create the Environment:
 	•	Install Dependencies: pip install -r requirements.txt
 	•	Deactivate: deactivate
 
+python -m py_compile app/api/v1/upload_imag.py
 
 import sys
 sys.path.append('/path/to/schemas')

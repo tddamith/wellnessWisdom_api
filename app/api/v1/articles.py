@@ -15,7 +15,7 @@ router = APIRouter()
 class UpdateImageURLRequest(BaseModel):
     image_url: str
 
-@router.post("/articles/", response_model=ArticleResponse)
+@router.post("/articles/", response_model=dict)
 async def create_article(article: ArticleCreate):
     """
     Create a new article in the database.
@@ -25,6 +25,7 @@ async def create_article(article: ArticleCreate):
         async with conn.cursor() as cursor:
             try:
                 # Insert the new article
+                print(article)
                 await cursor.execute("""
                     INSERT INTO news_articles
                     (id, title, content, author, category_id, sub_category_id, image_url, is_published, tags)

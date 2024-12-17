@@ -24,3 +24,5 @@ yt_dlp
 aiomysql
 sqlalchemy
 openai
+boto3
+python-multipart

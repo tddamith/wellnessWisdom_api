@@ -7,7 +7,8 @@ from app.db.database import connect_all, close_all
 from app.api.v1.category import router as category_router
 from app.api.v1.sub_category import router as sub_category_router
 from app.api.v1.articles import router as articles_router
-from app.api.v1.image import router as image_router
+from app.api.v1.upload_image import router as upload_image_router
+from app.api.v1.article_ai import router as article_ai_router
 # from app.api.v1.proxy_download import router as proxy_download_router
 
 # Configure logging
@@ -48,7 +49,8 @@ async def shutdown_db():
 app.include_router(category_router, prefix="/api/v1",tags=["Categories"])
 app.include_router(sub_category_router, prefix="/api/v1",tags=["SubCategories"])
 app.include_router(articles_router, prefix="/api/v1",tags=["Articles"])
-app.include_router(image_router, prefix="/api/v1",tags=["ImageGenerate"])
+app.include_router(upload_image_router, prefix="/api/v1",tags=["UploadImage"])
+app.include_router(article_ai_router, prefix="/api/v1",tags=["ArticlesAI"])
 
 @app.get("/")
 async def read_root():

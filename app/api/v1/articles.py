@@ -395,3 +395,74 @@ async def update_article_image_url(article_id: str, request: UpdateImageURLReque
                 raise HTTPException(status_code=500, detail=f"Failed to update image URL: {str(e)}")
 
     return {"message": f"Image URL updated successfully for article ID {article_id}"}
+
+
+@router.get("/articles/page", response_model=List[dict])
+async def get_all_articles(
+    skip: int = Query(0, ge=0),  # Default to skip 0, must be >= 0
+    limit: int = Query(10, ge=1, le=100)  # Default to 10, must be between 1 and 100
+):
+    """
+    Retrieve all news articles, ordered by the latest update, with pagination support.
+    """
+    async with mysql.pool.acquire() as conn:
+        async with conn.cursor() as cursor:
+            try:
+                # Query to fetch articles, ordered by the latest update, with pagination (LIMIT & OFFSET)
+                query = """
+                    SELECT
+                        articles.*,
+                        subcategories.name AS subcategory_name
+                    FROM news_articles AS articles
+                    LEFT JOIN subcategories ON articles.sub_category_id = subcategories.id
+                    ORDER BY articles.update_date DESC
+                    LIMIT %s OFFSET %s
+                """
+                print("Executing SQL Query:", query)
+                await cursor.execute(query, (limit, skip))
+                result = await cursor.fetchall()
+
+                # Check if the result is empty
+                if not result:
+                    raise HTTPException(status_code=404, detail="No articles found")
+
+                # Count the total number of articles in the database (for pagination)
+                await cursor.execute("""
+                    SELECT COUNT(*) FROM news_articles
+                """)
+                total_articles = await cursor.fetchone()
+
+                # If no total articles count, throw an error
+                if total_articles is None:
+                    raise HTTPException(status_code=500, detail="Failed to fetch total article count")
+
+                # Debug: Log the total article count
+                print("Total Articles:", total_articles)
+
+            except Exception as e:
+                # Catch any exception and log it for debugging
+                print(f"Error while fetching articles: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Failed to retrieve articles: {str(e)}")
+
+    # Return the total article count and paginated articles
+    return {
+        "total_articles": total_articles[0],  # Total number of articles in the database
+        "articles": [
+            {
+                "id": row[0],
+                "title": row[1],
+                "content": row[2],
+                "author": row[3],
+                "create_date": row[4],
+                "update_date": row[5],
+                "category_id": row[6],
+                "sub_category_id": row[7],
+                "image_url": row[8],
+                "is_published": row[9],
+                "views": row[10],
+                "tags": eval(row[11]) if row[11] else None,
+                "subcategory_name": row[12],  # Subcategory name
+            }
+            for row in result
+        ]
+    }

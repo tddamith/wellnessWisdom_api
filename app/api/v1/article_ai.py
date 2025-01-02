@@ -15,7 +15,7 @@ load_dotenv()
 router = APIRouter()
 
 # OpenAI Configuration
-#api_key=os.environ['OPENAI_API_KEY']
+api_key=os.environ['OPENAI_API_KEY']
 client = OpenAI()  # Load API key from environment
 
 # Request Schema

@@ -397,57 +397,51 @@ async def update_article_image_url(article_id: str, request: UpdateImageURLReque
     return {"message": f"Image URL updated successfully for article ID {article_id}"}
 
 
-@router.get("/articles/page", response_model=List[dict])
-async def get_all_articles(
-    skip: int = Query(0, ge=0),  # Default to skip 0, must be >= 0
-    limit: int = Query(10, ge=1, le=100)  # Default to 10, must be between 1 and 100
-):
+@router.get("/articles/limit", response_model=List[dict])
+async def get_articles_by_limit(limit: int = Query(10, ge=1, le=100, description="Number of articles to fetch")):
     """
-    Retrieve all news articles, ordered by the latest update, with pagination support.
+    Retrieve a limited number of news articles, ordered by the latest update.
     """
-    async with mysql.pool.acquire() as conn:
-        async with conn.cursor() as cursor:
-            try:
-                # Query to fetch articles, ordered by the latest update, with pagination (LIMIT & OFFSET)
+    try:
+        async with mysql.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                # Log the execution
+                print(f"Fetching up to {limit} articles from the database.")
+
+                # Fetch a limited number of articles
                 query = """
                     SELECT
-                        articles.*,
+                        articles.id,
+                        articles.title,
+                        articles.content,
+                        articles.author,
+                        articles.create_date,
+                        articles.update_date,
+                        articles.category_id,
+                        articles.sub_category_id,
+                        articles.image_url,
+                        articles.is_published,
+                        articles.views,
+                        articles.tags,
                         subcategories.name AS subcategory_name
                     FROM news_articles AS articles
                     LEFT JOIN subcategories ON articles.sub_category_id = subcategories.id
                     ORDER BY articles.update_date DESC
-                    LIMIT %s OFFSET %s
+                    LIMIT %s
                 """
-                print("Executing SQL Query:", query)
-                await cursor.execute(query, (limit, skip))
-                result = await cursor.fetchall()
+                print(f"Executing SQL Query: {query} with limit={limit}")
+                await cursor.execute(query, (limit,))
+                articles = await cursor.fetchall()
 
-                # Check if the result is empty
-                if not result:
+                # Debug: Log the fetched articles
+                print(f"Fetched Articles: {articles}")
+
+                # Check if articles exist
+                if not articles:
                     raise HTTPException(status_code=404, detail="No articles found")
 
-                # Count the total number of articles in the database (for pagination)
-                await cursor.execute("""
-                    SELECT COUNT(*) FROM news_articles
-                """)
-                total_articles = await cursor.fetchone()
-
-                # If no total articles count, throw an error
-                if total_articles is None:
-                    raise HTTPException(status_code=500, detail="Failed to fetch total article count")
-
-                # Debug: Log the total article count
-                print("Total Articles:", total_articles)
-
-            except Exception as e:
-                # Catch any exception and log it for debugging
-                print(f"Error while fetching articles: {str(e)}")
-                raise HTTPException(status_code=500, detail=f"Failed to retrieve articles: {str(e)}")
-
-    # Return the total article count and paginated articles
-    return {
-        "total_articles": total_articles[0],  # Total number of articles in the database
-        "articles": [
+        # Construct the response
+        return [
             {
                 "id": row[0],
                 "title": row[1],
@@ -460,9 +454,16 @@ async def get_all_articles(
                 "image_url": row[8],
                 "is_published": row[9],
                 "views": row[10],
-                "tags": eval(row[11]) if row[11] else None,
-                "subcategory_name": row[12],  # Subcategory name
+                "tags": json.loads(row[11]) if row[11] else None,
+                "subcategory_name": row[12],
             }
-            for row in result
+            for row in articles
         ]
-    }
+    except HTTPException as e:
+        # Re-raise the HTTPException with detailed logging
+        print(f"HTTPException raised: {e.detail}")
+        raise
+    except Exception as e:
+        # Log any other exception and raise a 500 error
+        print(f"Error fetching articles: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve articles")

@@ -26,3 +26,8 @@ sqlalchemy
 openai
 boto3
 python-multipart
+pytrends
+pytest
+httpx
+requests
+flask
